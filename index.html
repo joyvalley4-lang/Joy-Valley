@@ -1065,12 +1065,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       </div>
 
       <!-- =================================================== -->
-      <!-- FORMSPREE — replace YOUR_FORM_ID with your real ID -->
+      <!-- WEB3FORMS — submissions go to joyvalley4@gmail.com -->
       <!-- =================================================== -->
       <form class="tour-form"
             id="tourForm"
-            action="https://formspree.io/f/YOUR_FORM_ID"
+            action="https://api.web3forms.com/submit"
             method="POST">
+
+        <!-- Web3Forms config -->
+        <input type="hidden" name="access_key" value="ac8c9fba-495c-46a2-8d6d-8a5ba17d6302">
+        <input type="hidden" name="subject" value="New Tour Request — Joy Valley House">
+        <input type="hidden" name="from_name" value="Joy Valley House Website">
+
         <div class="field">
           <label for="name">Your name</label>
           <input type="text" id="name" name="name" required>
@@ -1113,8 +1119,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           <label for="chinese">I'm interested in Chinese-friendly meals and Mandarin/Cantonese-speaking staff (我有兴趣了解中式餐饮和国语/粤语服务)</label>
         </div>
 
-        <!-- Honeypot anti-spam field -->
-        <input type="text" name="_gotcha" style="display:none">
+        <!-- Web3Forms honeypot anti-spam field -->
+        <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
 
         <button type="submit" class="form-submit">Request a Tour →</button>
         <p class="form-note">
@@ -1175,6 +1181,19 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   const form = document.getElementById('tourForm');
   const success = document.getElementById('formSuccess');
 
+  // Helper: show inline error instead of alert (better UX, easier debugging)
+  function showFormError(message, details) {
+    let errBox = document.getElementById('formError');
+    if (!errBox) {
+      errBox = document.createElement('div');
+      errBox.id = 'formError';
+      errBox.style.cssText = 'margin-top:18px;padding:16px 18px;background:#FBE9E7;border:1px solid #C76E5F;border-radius:8px;color:#7A2A22;font-size:0.92rem;line-height:1.55;';
+      form.appendChild(errBox);
+    }
+    errBox.innerHTML = message + (details ? '<br><br><small style="opacity:0.7;font-family:monospace;">' + details + '</small>' : '');
+    errBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = form.querySelector('.form-submit');
@@ -1211,12 +1230,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
           window.dataLayer.push({ event: 'tour_form_submit' });
         }
       } else {
-        alert('Sorry — something went wrong sending your request. Please call us at (669) 837-1249.');
+        // Read the response body for diagnostic detail
+        let bodyText = '';
+        try { bodyText = await res.text(); } catch (_) {}
+        console.error('Form submit failed:', { status: res.status, statusText: res.statusText, body: bodyText, action: form.action });
+        showFormError(
+          'Sorry — your request didn\'t go through. Please call us at <a href="tel:+16698371249" style="color:#7A2A22;">(669) 837-1249</a>.',
+          'Status ' + res.status + ' from ' + form.action + (bodyText ? ' — ' + bodyText.substring(0, 200) : '')
+        );
         submitBtn.disabled = false;
         submitBtn.textContent = 'Request a Tour →';
       }
     } catch (err) {
-      alert('Sorry — something went wrong. Please call us at (669) 837-1249.');
+      console.error('Form submit error:', err);
+      showFormError(
+        'Sorry — your request didn\'t go through. Please call us at <a href="tel:+16698371249" style="color:#7A2A22;">(669) 837-1249</a>.',
+        err.message
+      );
       submitBtn.disabled = false;
       submitBtn.textContent = 'Request a Tour →';
     }
